@@ -133,9 +133,45 @@
                 content: url('images/header-mobile.png');
             }
         }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 1s ease-out;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #000;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner" id="spinner"></div>
+  </div>
+
   <img class="header" src="images/header-desktop.png" alt="Cheff's Table 2025">
   <section class="main">
     <p>Jackie,</p>
@@ -188,5 +224,55 @@
     TODO: Loading indicator while images are loading
     TOOD: Customization
   -->
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Create an array to hold all resource load promises
+      const loadPromises = [];
+
+      // Handle font loading
+      const fontLoading = document.fonts.ready;
+      loadPromises.push(fontLoading);
+
+      // Handle image loading (including background images)
+      const images = Array.from(document.querySelectorAll('img'));
+      const imagePromises = images.map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise(resolve => {
+          img.onload = resolve;
+          img.onerror = resolve; // Resolve even on error to avoid hanging
+        });
+      });
+      loadPromises.push(...imagePromises);
+
+      // Handle background image
+      const bgImage = new Image();
+      bgImage.src = 'images/paper-texture.png';
+      const bgImagePromise = new Promise(resolve => {
+        if (bgImage.complete) resolve();
+        else {
+          bgImage.onload = resolve;
+          bgImage.onerror = resolve; // Resolve even on error to avoid hanging
+        }
+      });
+      loadPromises.push(bgImagePromise);
+
+      // When everything is loaded, hide the overlay
+      Promise.all(loadPromises).then(() => {
+        document.getElementById('spinner').style.display = 'none';
+
+        // Small delay to ensure everything is rendered
+        setTimeout(() => {
+          const overlay = document.getElementById('loadingOverlay');
+          overlay.classList.add('hidden');
+
+          // Remove overlay after transition completes
+          overlay.addEventListener('transitionend', function() {
+            overlay.style.display = 'none';
+          });
+        }, 300);
+      });
+    });
+  </script>
 </body>
 </html>
